@@ -11,9 +11,8 @@ async function bootstrap() {
       transport: Transport.NATS,
       options: {
         servers: envs.natsServers
-      }
-    }
-  );
+      },
+    });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
