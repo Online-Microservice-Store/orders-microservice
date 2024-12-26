@@ -56,3 +56,58 @@ model OrderReceipt {
   createdAt DateTime @default(now())
   updateddAt DateTime @updatedAt
 }
+
+//Modelo de la verdadedara base de datos
+enum OrderState {
+  DELIVERED
+  NOT_DELIVERED
+  RETURNED
+}
+
+model Invoice{
+  id String @id @default(uuid())
+  date DateTime
+  tax Int
+  discount Int
+  subtotal Float
+  total Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  //TODO: Add relations
+  Item Item[]
+  Order2 Order2[]
+}
+
+model Order2 {
+  id String @id @default(uuid())
+  address String
+  coordinate String
+  deliveryTime DateTime
+  orderState OrderState
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // TODO: Add relations
+  Invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  invoiceId String?
+}
+
+
+
+model Item{
+  id String @id @default(uuid())
+  productId Int //TODO: Reviwew coorect Type
+  amount Int
+  individualValue Float
+  totalValue Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  //TODO: CHECK RELATIONS
+  Invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  invoiceId String?
+}
+
+
