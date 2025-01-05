@@ -5,6 +5,7 @@ import { NATS_SERVICE } from 'src/config';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { InvoiceWithProducts } from './interfaces/orden-with-interfaces.dto';
+import { PaginationDto } from 'common/dto/paginationDto';
 
 @Injectable()
 export class InvoiceService extends PrismaClient implements OnModuleInit {
@@ -107,11 +108,36 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
         }
     }
 
-    async findAll(invoicePaginationDto: InvoicePaginationDto){
-
+    async findAll(paginationDto: PaginationDto){
+        const totalPages = await this.invoice.count();
+        const currentPage = paginationDto.page;
+        const perPage = paginationDto.limit;
+        return {
+          data: await this.invoice.findMany({
+            skip: (currentPage - 1) * perPage,
+            take: perPage,
+          }),
+          meta: {
+            total: totalPages,
+            page: currentPage,
+            lastPage: Math.ceil(totalPages / perPage)
+          }
+        }
     }
-    async findOne(id: string){
 
+    async findOne(id: string){
+        const invoice = await this.invoice.findFirst({
+            where: {id},
+          });
+  
+          if(!invoice){
+            throw new RpcException({
+              message: `Invoice with id ${id} not found`,
+              status: HttpStatus.NOT_FOUND
+            });
+          }
+  
+          return invoice;
     }
     async editInvoice(updateInvoiceDto : UpdateInvoiceDto){
         

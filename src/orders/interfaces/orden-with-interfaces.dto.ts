@@ -3,7 +3,7 @@ import { OrderStatus } from "@prisma/client";
 export interface OrdersWithProducts{
     OrderItem: {
         name: string,
-        productId: number,
+        productId: string,
         quantity: number,
         price: number
     }[];

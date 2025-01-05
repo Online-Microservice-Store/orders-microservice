@@ -39,7 +39,7 @@ model Order {
 
 model OrderItem {
   id String @id @default(uuid())
-  productId Int 
+  productId String 
   quantity Int
   price Float
 
@@ -97,7 +97,7 @@ model Order2 {
 
 model Item{
   id String @id @default(uuid())
-  productId Int //TODO: Reviwew coorect Type
+  productId String //TODO: Reviwew coorect Type
   amount Int
   individualValue Float
   totalValue Float

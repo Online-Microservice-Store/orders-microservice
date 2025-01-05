@@ -1,9 +1,8 @@
 import { IsNumber, IsPositive, IsString } from "class-validator"
 
 export class CreateItemDto {
-    @IsNumber()
-    @IsPositive()
-    productId: number;
+    @IsString()
+    productId: string;
     
     @IsNumber()
     @IsPositive()

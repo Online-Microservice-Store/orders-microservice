@@ -2,7 +2,7 @@ import { OrderState } from "@prisma/client";
 
 export interface InvoiceWithProducts{
     Item: {
-        productId: number,
+        productId: string,
         individualValue: number,
         amount: number,
         name: string

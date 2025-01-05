@@ -2,6 +2,7 @@ import { Controller, ParseUUIDPipe } from '@nestjs/common';
 import { InvoiceService } from './invoice.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateInvoiceDto, InvoicePaginationDto, UpdateInvoiceDto } from './dto';
+import { PaginationDto } from 'common/dto/paginationDto';
 
 @Controller('invoice')
 export class InvoiceController {
@@ -10,16 +11,16 @@ export class InvoiceController {
   @MessagePattern('create_invoice')
   async create(@Payload() createInvoiceDto: CreateInvoiceDto) {
     const order = await this.invoiceService.create(createInvoiceDto);
-    const paymentSession = await this.invoiceService.createPaymentSession(order);
+    // const paymentSession = await this.invoiceService.createPaymentSession(order);
     return {
-      order,
-      paymentSession
+      order
+      // paymentSession
     }
   }
 
   @MessagePattern('find_all_invoices')
-  findAll(@Payload() invoicePaginationDto: InvoicePaginationDto) {
-    return this.invoiceService.findAll(invoicePaginationDto);
+  findAll(@Payload() paginationDto : PaginationDto) {
+    return this.invoiceService.findAll(paginationDto);
   }
 
   @MessagePattern('find_one_invoice')
