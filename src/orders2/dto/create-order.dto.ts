@@ -19,6 +19,8 @@ export class CreateOrderDto {
     })
     status: OrderState
 
+    @IsString()
+    clientId: string
     // @IsArray()
     // @ArrayMinSize(1)
     // //Valida cada item

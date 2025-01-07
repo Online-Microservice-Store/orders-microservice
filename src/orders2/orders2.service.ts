@@ -25,7 +25,8 @@ export class Orders2Service extends PrismaClient implements OnModuleInit {
                     address: createOrderDto.address,
                     coordinate: createOrderDto.coordinate,
                     deliveryTime: createOrderDto.deliveryTime,
-                    orderState: createOrderDto.status
+                    orderState: createOrderDto.status,
+                    clientId: createOrderDto.clientId 
                 }
             });
             return{

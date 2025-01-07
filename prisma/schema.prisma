@@ -77,6 +77,9 @@ model Invoice{
   //TODO: Add relations
   Item Item[]
   Order2 Order2[]
+  //Relation to another class
+  clientId String
+  paymentId String?
 }
 
 model Order2 {
@@ -91,6 +94,8 @@ model Order2 {
   // TODO: Add relations
   Invoice Invoice? @relation(fields: [invoiceId], references: [id])
   invoiceId String?
+  //Relations to another class
+  clientId String
 }
 
 

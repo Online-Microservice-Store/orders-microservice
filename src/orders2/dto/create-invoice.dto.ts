@@ -1,5 +1,5 @@
 import { Type } from "class-transformer"
-import { ArrayMinSize, IsArray, IsDate, IsNumber, IsPositive, ValidateNested } from "class-validator"
+import { ArrayMinSize, IsArray, IsDate, IsNumber, IsPositive, IsString, ValidateNested } from "class-validator"
 import { CreateOrderDto } from "./create-order.dto"
 import { CreateItemDto } from "./create-item.dto"
 
@@ -12,7 +12,6 @@ export class InvoiceDto {
     tax: number
 
     @IsNumber()
-    @IsPositive()
     discount: number
 
     @IsNumber()
@@ -36,4 +35,10 @@ export class InvoiceDto {
     @ValidateNested({each: true})
     @Type( () => CreateOrderDto)
     orders: []
+
+    @IsString()
+    clientId: String
+
+    @IsString()
+    paymentId: String
 }

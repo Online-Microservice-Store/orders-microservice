@@ -26,6 +26,7 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
             const productIds = createInvoiceDto.items.map(
                 (item) => item.productId
             );
+            
             const products: any[] = await firstValueFrom(
                 this.client.send({cmd: 'validate_products'}, productIds)
             )
@@ -37,7 +38,7 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
 
                 //return el precio por la cantidad del articulo
                 return acc + (price * orderItem.amount);
-            }, 0)
+            }, 0);
             // const totalItems = createInvoiceDto.items.reduce( (acc, item) => {
             //     return acc + item.amount;
             // }, 0);
@@ -46,6 +47,8 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
             const invoice = await this.invoice.create({
                 data: {
                     date: new Date(),
+                    clientId: createInvoiceDto.clientId,
+                    paymentId: createInvoiceDto.paymentId,
                     tax: createInvoiceDto.tax,
                     discount: createInvoiceDto.discount,
                     subtotal: totalAmount,
@@ -66,7 +69,8 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
                                 address: order.address,
                                 coordinate: order.coordinate,
                                 deliveryTime: order.deliveryTime,
-                                orderState: order.status
+                                orderState: order.status,
+                                clientId: order.clientId
                             }))
                         }
                     }
@@ -89,7 +93,19 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
                     }
                 }
             });
-
+            createInvoiceDto.items.map( (item) => ({
+                amount: item.amount,
+                productId: item.productId,
+                individualValue: products.find( product => product.id == item.productId).price,
+                totalValue: item.amount * products.find( product => product.id == item.productId).price
+            }))
+            await Promise.all(
+                createInvoiceDto.items.map(async (item) => {
+                  await firstValueFrom(
+                    this.client.send('update_stock_quantity', { id: item.stockId, amount: item.amount })
+                  );
+                })
+            );
             return {
                 ...invoice,
                 Item: invoice.Item.map( (item) => ({

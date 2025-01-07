@@ -11,10 +11,10 @@ export class InvoiceController {
   @MessagePattern('create_invoice')
   async create(@Payload() createInvoiceDto: CreateInvoiceDto) {
     const order = await this.invoiceService.create(createInvoiceDto);
-    // const paymentSession = await this.invoiceService.createPaymentSession(order);
+    const paymentSession = await this.invoiceService.createPaymentSession(order);
     return {
-      order
-      // paymentSession
+      order,
+      paymentSession
     }
   }
 

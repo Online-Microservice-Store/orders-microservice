@@ -24,5 +24,8 @@ export class CreateOrderDto {
     // @ValidateNested({each: true})
     // @Type( () => OrderItemDto)
     // items: OrderItemDto[]
+
+    @IsString()
+    clientId: string;
 }
 
