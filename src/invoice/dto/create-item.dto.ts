@@ -13,10 +13,12 @@ export class CreateItemDto{
     @IsPositive()
     individualValue?: number;
 
+    @IsOptional()
     @IsNumber()
     @IsPositive()
     totalValue?: number;
 
     @IsString()
     stockId: string;
+
 }

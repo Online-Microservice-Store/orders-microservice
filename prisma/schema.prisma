@@ -21,42 +21,6 @@ enum OrderStatus {
 }
 
 
-model Order {
-  id String @id @default(uuid())
-  totalAmount Float
-  totalItems Int
-  status OrderStatus @default(PENDING)
-  paid Boolean @default(false)
-  paidAt DateTime?
-  stripeChargeId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  OrderItem OrderItem[]
-  OrderReceipt OrderReceipt? //relacion 1 a 1 
-}
-
-model OrderItem {
-  id String @id @default(uuid())
-  productId String 
-  quantity Int
-  price Float
-
-  Order Order? @relation(fields: [orderId], references: [id])
-  orderId String?
-}
-
-model OrderReceipt {
-  id String @id @default(uuid())
-
-  order Order @relation(fields: [orderId], references: [id])
-  orderId String @unique
-  receipUrl String
-  createdAt DateTime @default(now())
-  updateddAt DateTime @updatedAt
-}
-
 //Modelo de la verdadedara base de datos
 enum OrderState {
   DELIVERED
@@ -74,15 +38,13 @@ model Invoice{
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  //TODO: Add relations
-  Item Item[]
-  Order2 Order2[]
+  InvoiceStore InvoiceStore[]
+  Order Order[]
   //Relation to another class
   clientId String
-  paymentId String?
 }
 
-model Order2 {
+model Order{
   id String @id @default(uuid())
   address String
   coordinate String
@@ -91,7 +53,6 @@ model Order2 {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  // TODO: Add relations
   Invoice Invoice? @relation(fields: [invoiceId], references: [id])
   invoiceId String?
   //Relations to another class
@@ -111,8 +72,25 @@ model Item{
   updatedAt DateTime @updatedAt
 
   //TODO: CHECK RELATIONS
+  InvoiceStore InvoiceStore? @relation(fields: [invoiceStoreId], references: [id])
+  invoiceStoreId String?
+}
+
+//NEW CLASS ADDED
+
+model InvoiceStore{
+  id String @id @default(uuid())
+  date DateTime
+  discount Float
+  tax Float
+  subtotal Float
+  total Float
+
+
+  //RELATIONS
+  Item Item[]
+  storeId String
   Invoice Invoice? @relation(fields: [invoiceId], references: [id])
   invoiceId String?
 }
-
 

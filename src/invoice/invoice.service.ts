@@ -20,107 +20,110 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
         this.logger.log('Database connected');
     }
 
-    async create(createInvoiceDto: CreateInvoiceDto){
+    async create(createInvoiceDto: CreateInvoiceDto) {
         try {
-            //1 Confirmar los ids de los productos
-            const productIds = createInvoiceDto.items.map(
-                (item) => item.productId
+            // 1. Confirmar los IDs de los productos
+            const productIds = createInvoiceDto.invoiceStores.flatMap(storeInvoice =>
+                storeInvoice.items.map(item => item.productId),
             );
-            
+    
             const products: any[] = await firstValueFrom(
-                this.client.send({cmd: 'validate_products'}, productIds)
-            )
-            //2 Calcular los valores
-            const totalAmount = createInvoiceDto.items.reduce( (acc, orderItem) => {
-                const price = products.find(
-                    (product) => product.id === orderItem.productId
-                ).price
-
-                //return el precio por la cantidad del articulo
-                return acc + (price * orderItem.amount);
-            }, 0);
-            // const totalItems = createInvoiceDto.items.reduce( (acc, item) => {
-            //     return acc + item.amount;
-            // }, 0);
-            
-            //Crear la insercion en la base de datos
+                this.client.send({ cmd: 'validate_products' }, productIds),
+            );
+    
+            // Crear un mapa para acceder más rápido a los precios
+            const productPriceMap = new Map(products.map(product => [product.id, product.price]));
+    
+            // 2. Calcular los valores por cada storeInvoice
+            const invoiceStoresData = createInvoiceDto.invoiceStores.map(storeInvoice => {
+                const subtotal = storeInvoice.items.reduce((acc, item) => {
+                    const price = productPriceMap.get(item.productId);
+                    if (!price) throw new Error(`Producto con ID ${item.productId} no encontrado.`);
+                    return acc + price * item.amount;
+                }, 0);
+    
+                const total = (subtotal - subtotal * (storeInvoice.discount / 100)) * (1 + storeInvoice.tax / 100);
+    
+                return {
+                    date: storeInvoice.date,
+                    discount: storeInvoice.discount,
+                    tax: storeInvoice.tax,
+                    storeId: storeInvoice.storeId,
+                    subtotal,
+                    total,
+                    items: storeInvoice.items.map(item => ({
+                        productId: item.productId,
+                        amount: item.amount,
+                        individualValue: productPriceMap.get(item.productId),
+                        totalValue: item.amount * productPriceMap.get(item.productId),
+                    })),
+                };
+            });
+    
+            // 3. Calcular la cantidad total del invoice
+            const totalSubtotal = invoiceStoresData.reduce((acc, store) => acc + store.total, 0);
+            const totalInvoice = (totalSubtotal - totalSubtotal * (createInvoiceDto.discount / 100)) * (1 + createInvoiceDto.tax / 100);
+    
+            // 4. Crear la invoice en la base de datos
             const invoice = await this.invoice.create({
                 data: {
                     date: new Date(),
                     clientId: createInvoiceDto.clientId,
-                    paymentId: createInvoiceDto.paymentId,
                     tax: createInvoiceDto.tax,
                     discount: createInvoiceDto.discount,
-                    subtotal: totalAmount,
-                    total: (totalAmount - (totalAmount * (createInvoiceDto.discount / 100))) * ((createInvoiceDto.tax/100) + 1),
-                    Item: {
-                        createMany: {
-                            data: createInvoiceDto.items.map( (item) => ({
-                                amount: item.amount,
-                                productId: item.productId,
-                                individualValue: products.find( product => product.id == item.productId).price,
-                                totalValue: item.amount * products.find( product => product.id == item.productId).price
-                            }))
-                        }
+                    subtotal: totalSubtotal,
+                    total: totalInvoice,
+                    InvoiceStore: {
+                        create: invoiceStoresData.map(storeInvoice => ({
+                            date: storeInvoice.date,
+                            discount: storeInvoice.discount,
+                            tax: storeInvoice.tax,
+                            storeId: storeInvoice.storeId,
+                            subtotal: storeInvoice.subtotal,
+                            total: storeInvoice.total,
+                            Item: {
+                                create: storeInvoice.items,
+                            },
+                        })),
                     },
-                    Order2: {
-                        createMany: {
-                            data: createInvoiceDto.orders.map( (order) => ({
-                                address: order.address,
-                                coordinate: order.coordinate,
-                                deliveryTime: order.deliveryTime,
-                                orderState: order.status,
-                                clientId: order.clientId
-                            }))
-                        }
-                    }
+                    Order: {
+                        create: createInvoiceDto.orders.map(order => ({
+                            address: order.address,
+                            coordinate: order.coordinate,
+                            deliveryTime: order.deliveryTime,
+                            orderState: order.status,
+                            clientId: order.clientId,
+                        })),
+                    },
                 },
                 include: {
-                    Item: {
-                        select: {
-                            productId: true,
-                            individualValue: true,
-                            amount: true,
-                        }
+                    InvoiceStore: {
+                        include: {
+                            Item: true,
+                        },
                     },
-                    Order2: {
-                        select: {
-                            address: true,
-                            coordinate: true,
-                            deliveryTime: true,
-                            orderState: true
-                        }
-                    }
-                }
+                    Order: true,
+                },
             });
-            createInvoiceDto.items.map( (item) => ({
-                amount: item.amount,
-                productId: item.productId,
-                individualValue: products.find( product => product.id == item.productId).price,
-                totalValue: item.amount * products.find( product => product.id == item.productId).price
-            }))
+            //registro de clientes
             await Promise.all(
-                createInvoiceDto.items.map(async (item) => {
-                  await firstValueFrom(
-                    this.client.send('update_stock_quantity', { id: item.stockId, amount: item.amount })
-                  );
+                invoiceStoresData.map(async (storeInvoice) => {
+                    const response = await firstValueFrom(
+                        this.client.send('create_store_client', {
+                            clientId: createInvoiceDto.clientId,
+                            storeId: storeInvoice.storeId,
+                        }),
+                    );
+                    return response; // Devuelve el resultado para que esté en el array final
                 })
             );
-            return {
-                ...invoice,
-                Item: invoice.Item.map( (item) => ({
-                    ...item,
-                    name: products.find( product => product.id == item.productId).name
-                })),
-                Order: invoice.Order2.map( order => ({
-                    ...order
-                }))
-            }
+            
+            return invoice;
         } catch (error) {
             throw new RpcException({
                 status: HttpStatus.BAD_REQUEST,
-                message: 'Check logs' 
-            })
+                message: error.message || 'Error al crear la invoice',
+            });
         }
     }
 
@@ -163,13 +166,86 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
           this.client.send('create.payment.session',{
             orderId: order.id,
             currency: 'usd',
-            items: order.Item.map( item => ({
-              name: item.name,
-              price: item.individualValue,
-              quantity: item.amount
-            })),
+            items: order.InvoiceStore.flatMap(invoiceStore =>
+                invoiceStore.Item.map(item => ({
+                  productId: item.productId, // Asegúrate de que el campo `name` exista en tu JSON.
+                  price: item.individualValue,
+                  quantity: item.amount
+                }))
+              ),
+            clientId: order.clientId,
           })
         )
         return paymentSession;
     }
+
+    async getInvoicesByUserId(invoicePaginationDto: InvoicePaginationDto){
+        const totalPages = await this.invoice.count(
+            {
+                where: {clientId: invoicePaginationDto.id},
+            }
+        );
+        const currentPage = invoicePaginationDto.page;
+        const perPage = invoicePaginationDto.limit;
+        return {
+          data: await this.invoice.findMany({
+            where: {clientId: invoicePaginationDto.id},
+            skip: (currentPage - 1) * perPage,
+            take: perPage,
+          }),
+          meta: {
+            total: totalPages,
+            page: currentPage,
+            lastPage: Math.ceil(totalPages / perPage)
+          }
+        }
+    }
+
+    async getInvoicesStoreByUserId(invoicePaginationDto: InvoicePaginationDto){
+        const totalPages = await this.invoiceStore.count(
+            {
+                where: {invoiceId: invoicePaginationDto.invoiceId},
+            }
+        );
+        const currentPage = invoicePaginationDto.page;
+        const perPage = invoicePaginationDto.limit;
+        
+        return {
+          data: await this.invoiceStore.findMany({
+            where: {invoiceId: invoicePaginationDto.invoiceId},
+            skip: (currentPage - 1) * perPage,
+            take: perPage,
+          }),
+          meta: {
+            total: totalPages,
+            page: currentPage,
+            lastPage: Math.ceil(totalPages / perPage)
+          }
+        }
+    }
+
+    async getInvoicesByStoreId(invoicePaginationDto: InvoicePaginationDto){
+        const totalPages = await this.invoiceStore.count(
+            {
+                where: {storeId: invoicePaginationDto.id},
+            }
+        );
+        const currentPage = invoicePaginationDto.page;
+        const perPage = invoicePaginationDto.limit;
+        
+        return {
+          data: await this.invoiceStore.findMany({
+            where: {storeId: invoicePaginationDto.id},
+            skip: (currentPage - 1) * perPage,
+            take: perPage,
+          }),
+          meta: {
+            total: totalPages,
+            page: currentPage,
+            lastPage: Math.ceil(totalPages / perPage)
+          }
+        }
+    }
+
+    
 }

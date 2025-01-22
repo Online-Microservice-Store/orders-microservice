@@ -10,10 +10,10 @@ export class InvoiceController {
 
   @MessagePattern('create_invoice')
   async create(@Payload() createInvoiceDto: CreateInvoiceDto) {
-    const order = await this.invoiceService.create(createInvoiceDto);
-    const paymentSession = await this.invoiceService.createPaymentSession(order);
+    const invoice = await this.invoiceService.create(createInvoiceDto);
+    const paymentSession = await this.invoiceService.createPaymentSession(invoice);
     return {
-      order,
+      order: invoice,
       paymentSession
     }
   }
@@ -32,5 +32,22 @@ export class InvoiceController {
   editInvoice(@Payload() updateInvoiceDto : UpdateInvoiceDto){
     return this.invoiceService.editInvoice(updateInvoiceDto);
   }
-  
+
+  //Client
+  @MessagePattern('find_invoices_by_clientId')
+  getInvoicesByUser(@Payload() invoicePaginationDto: InvoicePaginationDto){
+    return this.invoiceService.getInvoicesByUserId(invoicePaginationDto);
+  }
+
+  @MessagePattern('find_invoices_by_StoreId')
+  getInvoicesByStoreId(@Payload('id') invoicePaginationDto: InvoicePaginationDto){
+    return this.invoiceService.getInvoicesByStoreId(invoicePaginationDto);
+  }
+
+  //Client
+  @MessagePattern('find_invoicesStore_by_clientId')
+  getInvoicesStoreByUserId(@Payload() invoicePaginationDto: InvoicePaginationDto){
+    return this.invoiceService.getInvoicesStoreByUserId(invoicePaginationDto);
+  }
+   
 }
