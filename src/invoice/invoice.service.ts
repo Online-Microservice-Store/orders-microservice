@@ -105,6 +105,22 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
                     Order: true,
                 },
             });
+
+            // Actualziación de stock
+            await Promise.all(
+                createInvoiceDto.invoiceStores.map(async (invoiceStore) => {
+                    const res = invoiceStore.items.map(async (item) => {
+                        const response = await firstValueFrom(
+                            this.client.send('update_stock_quantity', {
+                                id: item.stockId,
+                                amount: item.amount
+                            }),
+                        );
+                        return response;
+                    });
+                    return res;
+                })
+            )
             //registro de clientes
             await Promise.all(
                 invoiceStoresData.map(async (storeInvoice) => {
@@ -225,6 +241,7 @@ export class InvoiceService extends PrismaClient implements OnModuleInit {
     }
 
     async getInvoicesByStoreId(invoicePaginationDto: InvoicePaginationDto){
+        console.log(invoicePaginationDto)
         const totalPages = await this.invoiceStore.count(
             {
                 where: {storeId: invoicePaginationDto.id},

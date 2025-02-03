@@ -40,7 +40,7 @@ export class InvoiceController {
   }
 
   @MessagePattern('find_invoices_by_StoreId')
-  getInvoicesByStoreId(@Payload('id') invoicePaginationDto: InvoicePaginationDto){
+  getInvoicesByStoreId(@Payload() invoicePaginationDto: InvoicePaginationDto){
     return this.invoiceService.getInvoicesByStoreId(invoicePaginationDto);
   }
 

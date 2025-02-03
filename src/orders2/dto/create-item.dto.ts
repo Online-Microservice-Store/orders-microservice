@@ -1,16 +1,16 @@
-import { IsNumber, IsOptional, IsPositive, IsString } from "class-validator"
+import { IsNumber, IsOptional, IsPositive, IsString, Min } from "class-validator"
 
 export class CreateItemDto {
     @IsString()
     productId: string;
     
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     amount: number;
     
     @IsOptional()
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     individualValue?: number;
     
     @IsOptional()

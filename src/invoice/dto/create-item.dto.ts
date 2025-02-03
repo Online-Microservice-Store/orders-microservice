@@ -1,21 +1,21 @@
-import { IsNumber, IsOptional, IsPositive, IsString, IsUUID } from "class-validator";
+import { IsNumber, IsOptional, IsPositive, IsString, IsUUID, Min } from "class-validator";
 
 export class CreateItemDto{
     @IsString()
     productId: string;
     
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     amount: number;
 
     @IsOptional()
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     individualValue?: number;
 
     @IsOptional()
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     totalValue?: number;
 
     @IsString()

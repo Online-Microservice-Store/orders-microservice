@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsArray, IsDate, IsNumber, IsOptional, IsPositive, IsString, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsArray, IsDate, IsNumber, IsOptional, IsPositive, IsString, Min, ValidateNested } from "class-validator";
 import { CreateItemDto } from "src/orders2/dto";
 import { CreateOrderDto } from "./create-order.dto";
 import { CreateStoreInvoiceDto } from "./create-store-invoice.dto";
@@ -10,7 +10,7 @@ export class CreateInvoiceDto {
     date: Date;
     
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     tax: number;
 
     @IsNumber()
@@ -18,12 +18,12 @@ export class CreateInvoiceDto {
 
     @IsOptional()
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     subtotal?: number;
 
     @IsOptional()
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     total?: number;
 
     @IsArray()
