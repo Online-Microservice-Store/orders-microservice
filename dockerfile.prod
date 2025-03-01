@@ -8,8 +8,8 @@ RUN npm install
 
 #BUILDER - Construye la app
 FROM node:21-alpine3.19 as build
-ARG ORDERS_DB_URL
-ENV DATABASE_URL=$ORDERS_DB_URL
+ARG ORDERS_DB_URL_NEON
+ENV DATABASE_URL=$ORDERS_DB_URL_NEON
 WORKDIR /usr/src/app
 #Copiar de devs los modulos de node
 COPY --from=deps /usr/src/app/node_modules ./node_modules
